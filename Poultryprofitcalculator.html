@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poultry Farm Profit Calculator</title>
+<style>
+  :root{--g:#1f7a3d;--g2:#e8f5ec;--r:#c0392b;--r2:#fdecea;--t:#1c2a22;--m:#5d6b62;--b:#d9e2dc;--bg:#f6f8f6}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--t);line-height:1.4}
+  .wrap{max-width:760px;margin:0 auto;padding:16px}
+  h1{font-size:1.4rem;margin:8px 0 2px}
+  .sub{color:var(--m);font-size:.9rem;margin-bottom:14px}
+  .tabs{display:flex;gap:8px;margin-bottom:14px}
+  .tab{flex:1;padding:10px;border:1px solid var(--b);background:#fff;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;color:var(--m)}
+  .tab.on{background:var(--g);color:#fff;border-color:var(--g)}
+  .card{background:#fff;border:1px solid var(--b);border-radius:12px;padding:14px;margin-bottom:14px}
+  .card h2{font-size:1rem;margin:0 0 10px;color:var(--g)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:520px){.grid{grid-template-columns:1fr}}
+  label{display:block;font-size:.8rem;color:var(--m);margin-bottom:3px}
+  input{width:100%;padding:9px 10px;border:1px solid var(--b);border-radius:8px;font-size:1rem;background:#fff;color:var(--t)}
+  input:focus{outline:2px solid var(--g2);border-color:var(--g)}
+  .hero{border-radius:12px;padding:16px;text-align:center;margin-bottom:14px}
+  .hero.win{background:var(--g2);border:1px solid var(--g)}
+  .hero.loss{background:var(--r2);border:1px solid var(--r)}
+  .hero .lbl{font-size:.85rem;color:var(--m)}
+  .hero .big{font-size:2rem;font-weight:800}
+  .win .big{color:var(--g)} .loss .big{color:var(--r)}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .stat{background:#fff;border:1px solid var(--b);border-radius:10px;padding:10px}
+  .stat .k{font-size:.75rem;color:var(--m)} .stat .v{font-size:1.05rem;font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:.92rem}
+  td{padding:7px 0;border-bottom:1px solid var(--b)} td:last-child{text-align:right;font-weight:600}
+  tr.tot td{border-bottom:none;font-weight:800;color:var(--g)}
+  .bar{height:10px;border-radius:6px;background:var(--b);overflow:hidden;display:flex;margin:6px 0 10px}
+  .bar span{display:block;height:100%}
+  .note{font-size:.78rem;color:var(--m);margin-top:6px}
+  .warn{background:#fff8e1;border:1px solid #f0d78a;border-radius:8px;padding:8px 10px;font-size:.85rem;margin-bottom:10px;display:none}
+  button.reset{width:100%;padding:11px;border-radius:10px;border:1px solid var(--b);background:#fff;font-size:.95rem;cursor:pointer;color:var(--m)}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐔 Poultry Farm Profit Calculator</h1>
+  <div class="sub">Estimate costs, revenue and profit per batch. All amounts in Naira (₦). Edit the numbers to match your farm.</div>
+
+  <div class="tabs">
+    <button class="tab on" id="tabB" onclick="setMode('broiler')">Broilers</button>
+    <button class="tab" id="tabL" onclick="setMode('layer')">Layers (eggs)</button>
+  </div>
+
+  <div class="card">
+    <h2>Flock &amp; purchase</h2>
+    <div class="grid">
+      <div><label>Number of birds placed</label><input id="birds" type="number" inputmode="decimal"></div>
+      <div><label id="lblChick">Cost per day-old chick (₦)</label><input id="chick" type="number" inputmode="decimal"></div>
+      <div><label>Mortality (%)</label><input id="mort" type="number" inputmode="decimal"></div>
+      <div><label>Vaccines &amp; medication per bird (₦)</label><input id="med" type="number" inputmode="decimal"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Feed</h2>
+    <div class="grid">
+      <div><label>Feed price per 25kg bag (₦)</label><input id="bag" type="number" inputmode="decimal"></div>
+      <div id="bFeed"><label>Feed eaten per bird, whole cycle (kg)</label><input id="feedKg" type="number" inputmode="decimal"></div>
+      <div class="hide" id="lFeed1"><label>Rearing feed per bird to point of lay (kg)</label><input id="rearKg" type="number" inputmode="decimal"></div>
+      <div class="hide" id="lFeed2"><label>Laying feed per bird per day (g)</label><input id="layG" type="number" inputmode="decimal"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Other costs (whole batch)</h2>
+    <div class="grid">
+      <div><label>Labour / salary (₦)</label><input id="labour" type="number" inputmode="decimal"></div>
+      <div><label>Water, power, fuel (₦)</label><input id="util" type="number" inputmode="decimal"></div>
+      <div><label>Litter, disinfectants, transport (₦)</label><input id="misc" type="number" inputmode="decimal"></div>
+      <div><label>Housing / equipment share (₦)</label><input id="fixed" type="number" inputmode="decimal"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Sales</h2>
+    <div class="grid" id="bSales">
+      <div><label>Average live weight at sale (kg)</label><input id="wt" type="number" inputmode="decimal"></div>
+      <div><label>Selling price per kg live weight (₦)</label><input id="pkg" type="number" inputmode="decimal"></div>
+    </div>
+    <div class="grid hide" id="lSales">
+      <div><label>Laying period (months)</label><input id="months" type="number" inputmode="decimal"></div>
+      <div><label>Average lay rate (%)</label><input id="rate" type="number" inputmode="decimal"></div>
+      <div><label>Egg price per crate of 30 (₦)</label><input id="crate" type="number" inputmode="decimal"></div>
+      <div><label>Spent hen sale price (₦ each)</label><input id="spent" type="number" inputmode="decimal"></div>
+    </div>
+  </div>
+
+  <div class="warn" id="warn"></div>
+
+  <div class="hero" id="hero">
+    <div class="lbl">Estimated net profit this batch</div>
+    <div class="big" id="profit">₦0</div>
+    <div class="lbl" id="verdict"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">Total revenue</div><div class="v" id="sRev"></div></div>
+    <div class="stat"><div class="k">Total cost</div><div class="v" id="sCost"></div></div>
+    <div class="stat"><div class="k">Profit per bird placed</div><div class="v" id="sPB"></div></div>
+    <div class="stat"><div class="k">Return on investment</div><div class="v" id="sROI"></div></div>
+    <div class="stat"><div class="k">Profit margin</div><div class="v" id="sMar"></div></div>
+    <div class="stat"><div class="k" id="kBE">Break-even price</div><div class="v" id="sBE"></div></div>
+  </div>
+
+  <div class="card">
+    <h2>Cost breakdown</h2>
+    <div class="bar" id="bar"></div>
+    <table id="tbl"></table>
+  </div>
+
+  <div class="card">
+    <h2>What if prices change?</h2>
+    <table id="sens"></table>
+    <div class="note">Shows profit if your selling price falls or feed price rises. Feed is usually 60–70% of costs, so small feed price moves matter a lot.</div>
+  </div>
+
+  <button class="reset" onclick="setMode(mode)">Reset to example values</button>
+  <div class="note" style="text-align:center;margin-top:10px">Example values are rough Nigerian estimates only. Replace them with your real prices and records.</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const N=id=>parseFloat($(id).value)||0;
+const fmt=n=>(n<0?"-":"")+"₦"+Math.abs(Math.round(n)).toLocaleString("en-NG");
+let mode="broiler";
+
+const defaults={
+  broiler:{birds:500,chick:1200,mort:5,med:150,bag:30000,feedKg:4.2,labour:60000,util:25000,misc:40000,fixed:50000,wt:2.2,pkg:3200},
+  layer:{birds:500,chick:1500,mort:8,med:900,bag:28000,rearKg:7.5,layG:115,labour:600000,util:250000,misc:300000,fixed:400000,months:12,rate:80,crate:5500,spent:6500}
+};
+
+function setMode(m){
+  mode=m;
+  const b=m==="broiler";
+  $("tabB").classList.toggle("on",b);$("tabL").classList.toggle("on",!b);
+  $("bFeed").classList.toggle("hide",!b);
+  $("lFeed1").classList.toggle("hide",b);$("lFeed2").classList.toggle("hide",b);
+  $("bSales").classList.toggle("hide",!b);$("lSales").classList.toggle("hide",b);
+  $("lblChick").textContent=b?"Cost per day-old chick (₦)":"Cost per day-old pullet chick (₦)";
+  $("kBE").textContent=b?"Break-even price per kg":"Break-even price per crate";
+  const d=defaults[m];
+  document.querySelectorAll("input").forEach(i=>i.value="");
+  Object.keys(d).forEach(k=>{if($(k))$(k).value=d[k]});
+  calc();
+}
+
+function compute(feedMult,priceMult){
+  const birds=N("birds"),mort=N("mort")/100,surv=birds*(1-mort);
+  const bagPerKg=N("bag")/25*feedMult;
+  const chick=birds*N("chick"),med=birds*N("med");
+  let feedKg,feed,rev,units=0;
+  if(mode==="broiler"){
+    // mortalities eat roughly half a cycle on average
+    feedKg=(surv+birds*mort*0.5)*N("feedKg");
+    feed=feedKg*bagPerKg;
+    units=surv*N("wt");
+    rev=units*N("pkg")*priceMult;
+  }else{
+    const layKg=N("layG")/1000*30.4*N("months");
+    feedKg=birds*N("rearKg")*(1-mort*0.3)+surv*layKg;
+    feed=feedKg*bagPerKg;
+    const eggs=surv*N("months")*30.4*N("rate")/100;
+    units=eggs/30;
+    rev=(units*N("crate")+surv*N("spent"))*priceMult;
+  }
+  const other=N("labour")+N("util")+N("misc")+N("fixed");
+  const cost=chick+feed+med+other;
+  return{birds,surv,chick,feed,med,other,cost,rev,units,feedKg,profit:rev-cost,lab:N("labour"),util:N("util"),misc:N("misc"),fixed:N("fixed")};
+}
+
+function calc(){
+  const r=compute(1,1);
+  const w=[];
+  if(r.birds<=0)w.push("Enter the number of birds placed.");
+  if(N("mort")>30)w.push("Mortality above 30% is very high. Double-check this number.");
+  if(mode==="layer"&&N("rate")>100)w.push("Lay rate cannot be above 100%.");
+  const wb=$("warn");wb.style.display=w.length?"block":"none";wb.innerHTML=w.join("<br>");
+
+  const win=r.profit>=0;
+  $("hero").className="hero "+(win?"win":"loss");
+  $("profit").textContent=fmt(r.profit);
+  $("verdict").textContent=win?"This batch makes money at these numbers.":"This batch loses money at these numbers.";
+  $("sRev").textContent=fmt(r.rev);
+  $("sCost").textContent=fmt(r.cost);
+  $("sPB").textContent=r.birds?fmt(r.profit/r.birds):"-";
+  $("sROI").textContent=r.cost?(r.profit/r.cost*100).toFixed(1)+"%":"-";
+  $("sMar").textContent=r.rev?(r.profit/r.rev*100).toFixed(1)+"%":"-";
+  if(mode==="broiler"){
+    $("sBE").textContent=r.units?fmt(r.cost/r.units)+"/kg":"-";
+  }else{
+    const spentRev=r.surv*N("spent");
+    $("sBE").textContent=r.units?fmt((r.cost-spentRev)/r.units)+"/crate":"-";
+  }
+
+  const rows=[["Chicks / pullets",r.chick,"#1f7a3d"],["Feed",r.feed,"#e0a82e"],["Vaccines & medication",r.med,"#3b82c4"],["Labour",r.lab,"#8e5bb5"],["Water, power, fuel",r.util,"#d9663b"],["Litter, transport, misc",r.misc,"#6b8f71"],["Housing / equipment",r.fixed,"#9aa5a0"]];
+  $("bar").innerHTML=rows.map(x=>r.cost?`<span style="width:${x[1]/r.cost*100}%;background:${x[2]}"></span>`:"").join("");
+  $("tbl").innerHTML=rows.map(x=>`<tr><td><span style="color:${x[2]}">●</span> ${x[0]}</td><td>${fmt(x[1])} <span style="color:var(--m);font-weight:400;font-size:.8rem">(${r.cost?(x[1]/r.cost*100).toFixed(0):0}%)</span></td></tr>`).join("")
+    +`<tr class="tot"><td>Total cost</td><td>${fmt(r.cost)}</td></tr>`
+    +`<tr><td>Feed used</td><td>${Math.round(r.feedKg).toLocaleString("en-NG")} kg (${Math.ceil(r.feedKg/25).toLocaleString("en-NG")} bags)</td></tr>`
+    +`<tr><td>${mode==="broiler"?"Birds sold":"Birds surviving"}</td><td>${Math.round(r.surv).toLocaleString("en-NG")}</td></tr>`
+    +(mode==="layer"?`<tr><td>Crates of eggs produced</td><td>${Math.round(r.units).toLocaleString("en-NG")}</td></tr>`:"");
+
+  const sc=[["As entered",1,1],["Selling price -10%",1,0.9],["Selling price -20%",1,0.8],["Feed price +10%",1.1,1],["Feed price +20%",1.2,1],["Price -10% and feed +10%",1.1,0.9]];
+  $("sens").innerHTML=sc.map(s=>{const x=compute(s[1],s[2]);return `<tr><td>${s[0]}</td><td style="color:${x.profit>=0?"var(--g)":"var(--r)"}">${fmt(x.profit)}</td></tr>`}).join("");
+}
+
+document.addEventListener("input",calc);
+setMode("broiler");
+</script>
+</body>
+</html>
